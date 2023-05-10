@@ -33,47 +33,49 @@ def upload_file_to_s3(file_path, bucket_name):
     # Expand the tilde character in the file path to the user's home directory
     file_path = os.path.expanduser(file_path)
 
+    if check_if_bucket_exists(bucket_name):
+        try:
+            s3.upload_file(file_path, bucket_name, file_path.split("/")[-1])  # split gets the filename
+            print(f"File {file_path} uploaded to S3 bucket {bucket_name} successfully!")
+        except FileNotFoundError:
+            print(f"File {file_path} not found.")
+        except NoCredentialsError:
+            print("Credentials not available to upload file to S3.")
 
-    try:
-        s3.upload_file(file_path, bucket_name, file_path.split("/")[-1])  # split gets the filename
-        print(f"File {file_path} uploaded to S3 bucket {bucket_name} successfully!")
-    except FileNotFoundError:
-        print(f"File {file_path} not found.")
-    except NoCredentialsError:
-        print("Credentials not available to upload file to S3.")
 
 
 def upload_files_to_s3(directory_path, bucket_name):
     # Expand the tilde character in the directory path to the user's home directory
     directory_path = os.path.expanduser(directory_path)
+    if check_if_bucket_exists(bucket_name):
+        # Get a list of all files in the directory
+        paths_to_files = []
+        for file in os.listdir(directory_path):
+            full_path = os.path.join(directory_path, file)  # construct the path
+            if os.path.isfile(full_path):  # check if it's a file (other directories can be in the directory)
+                paths_to_files.append(full_path)
 
-    # Get a list of all files in the directory
-    paths_to_files = []
-    for file in os.listdir(directory_path):
-        full_path = os.path.join(directory_path, file)  # construct the path
-        if os.path.isfile(full_path):  # check if it's a file (other directories can be in the directory)
-            paths_to_files.append(full_path)
-
-    # Upload each file to the S3 bucket
-    for path_to_file in paths_to_files:
-        try:
-            s3.upload_file(path_to_file, bucket_name, os.path.basename(
-                path_to_file))  # basename(path_to_file) - creates the key to the object-will be named same as filename
-            print(f"File {path_to_file} uploaded to S3 bucket {bucket_name} successfully!")
-        except NoCredentialsError:
-            print("Credentials not available to upload file to S3.")
+        # Upload each file to the S3 bucket
+        for path_to_file in paths_to_files:
+            try:
+                s3.upload_file(path_to_file, bucket_name, os.path.basename(
+                    path_to_file))  # basename(path_to_file) - creates the key to the object-will be named same as filename
+                print(f"File {path_to_file} uploaded to S3 bucket {bucket_name} successfully!")
+            except NoCredentialsError:
+                print("Credentials not available to upload file to S3.")
 
 
 def download_file_from_s3(bucket_name, file_name, download_path):
-    try:
-        s3.download_file(bucket_name, file_name,
-                         download_path)  # donload_path is the local path where the file will be saved
-        print(f"File {file_name} downloaded from bucket {bucket_name} to {download_path} successfully.")
-    except ClientError as e:
-        if e.response['Error']['Code'] == "404":
-            print(f"Error: File {file_name} does not exist in bucket {bucket_name}.")
-        else:
-            print(f"Error: {e}")
+    if check_if_bucket_exists(bucket_name):
+        try:
+            s3.download_file(bucket_name, file_name,
+                            download_path)  # donload_path is the local path where the file will be saved
+            print(f"File {file_name} downloaded from bucket {bucket_name} to {download_path} successfully.")
+        except ClientError as e:
+            if e.response['Error']['Code'] == "404":
+                print(f"Error: File {file_name} does not exist in bucket {bucket_name}.")
+            else:
+                print(f"Error: {e}")
 
 
 def list_s3_objects(bucket_name):
