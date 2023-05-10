@@ -4,8 +4,8 @@ from botocore.exceptions import NoCredentialsError
 
 s3 = boto3.client('s3', region_name='us-west-2')
 
-def create_s3_bucket(bucket_name):
 
+def create_s3_bucket(bucket_name):
     s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={
         'LocationConstraint': 'us-west-2'
     })
@@ -16,7 +16,7 @@ def upload_file_to_s3(file_path, bucket_name):
     # Expand the tilde character in the file path to the user's home directory
     file_path = os.path.expanduser(file_path)
     try:
-        s3.upload_file(file_path, bucket_name, file_path.split("/")[-1]) #split gets the filename
+        s3.upload_file(file_path, bucket_name, file_path.split("/")[-1])  # split gets the filename
         print(f"File {file_path} uploaded to S3 bucket {bucket_name} successfully!")
     except FileNotFoundError:
         print(f"File {file_path} not found.")
@@ -25,7 +25,23 @@ def upload_file_to_s3(file_path, bucket_name):
 
 
 def upload_files_to_s3(directory_path, bucket_name):
-    print(directory_path, bucket_name)
+    # Expand the tilde character in the directory path to the user's home directory
+    directory_path = os.path.expanduser(directory_path)
+
+    # Get a list of all files in the directory
+    paths_to_files = []
+    for file in os.listdir(directory_path):
+        full_path = os.path.join(directory_path, file) #construct the path
+        if os.path.isfile(full_path): #check if its a file (other directories can be in the directory)
+            paths_to_files.append(full_path)
+
+    # Upload each file to the S3 bucket
+    for path_to_file in paths_to_files:
+        try:
+            s3.upload_file(path_to_file, bucket_name, os.path.basename(path_to_file)) #basename(path_to_file) - creates the key to the object-will be named same as filename
+            print(f"File {path_to_file} uploaded to S3 bucket {bucket_name} successfully!")
+        except NoCredentialsError:
+            print("Credentials not available to upload file to S3.")
 
 
 def download_file_from_s3(bucket_name, file_name, download_path):
