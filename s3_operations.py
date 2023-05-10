@@ -1,10 +1,11 @@
+import os
 import boto3
+from botocore.exceptions import NoCredentialsError
 
-import boto3
-
+s3 = boto3.client('s3', region_name='us-west-2')
 
 def create_s3_bucket(bucket_name):
-    s3 = boto3.client('s3', region_name='us-west-2')
+
     s3.create_bucket(Bucket=bucket_name, CreateBucketConfiguration={
         'LocationConstraint': 'us-west-2'
     })
@@ -12,7 +13,15 @@ def create_s3_bucket(bucket_name):
 
 
 def upload_file_to_s3(file_path, bucket_name):
-    print(file_path, bucket_name)
+    # Expand the tilde character in the file path to the user's home directory
+    file_path = os.path.expanduser(file_path)
+    try:
+        s3.upload_file(file_path, bucket_name, file_path.split("/")[-1]) #split gets the filename
+        print(f"File {file_path} uploaded to S3 bucket {bucket_name} successfully!")
+    except FileNotFoundError:
+        print(f"File {file_path} not found.")
+    except NoCredentialsError:
+        print("Credentials not available to upload file to S3.")
 
 
 def upload_files_to_s3(directory_path, bucket_name):
