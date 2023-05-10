@@ -79,13 +79,25 @@ def download_file_from_s3(bucket_name, file_name, download_path):
 
 
 def list_s3_objects(bucket_name):
-    print(bucket_name)
+    if check_if_bucket_exists(bucket_name):
+        s3_resource = boto3.resource('s3')
+        bucket = s3_resource.Bucket(bucket_name)
+        for obj in bucket.objects.all():
+            print(obj.key)
 
 
 def delete_s3_bucket(bucket_name):
-    print(bucket_name)
+    if check_if_bucket_exists(bucket_name):
+        s3_resource = boto3.resource('s3')
+        bucket = s3_resource.Bucket(bucket_name)
+        try:
+            bucket.objects.all().delete()
+            bucket.delete()
+            print(f"S3 bucket {bucket_name} deleted successfully.")
+        except Exception as e:
+            print(f"Error deleting S3 bucket {bucket_name}: {e}")
 
-"""
+
 while True:
     print("What would you like to do?")
     print("1. create_s3_bucket")
@@ -127,4 +139,3 @@ while True:
         break
     else:
         print("Enter valid selection (1/2/3...)")
-"""
